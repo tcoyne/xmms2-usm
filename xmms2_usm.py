@@ -29,132 +29,132 @@ from dbus.mainloop.glib import DBusGMainLoop
 class XMMS2USM:
 
 
-	def __init__(self):
-		self.ml = gobject.MainLoop(None, False)
+    def __init__(self):
+        self.ml = gobject.MainLoop(None, False)
 
-		self.xmms = xmmsclient.XMMS("ubuntu-sound-menu")
-		try:
-			self.xmms.connect(os.getenv("XMMS_PATH"), self.dieme)
-		except IOError, detail:
-			print "Connection failed:", detail
-			sys.exit(1)
+        self.xmms = xmmsclient.XMMS("ubuntu-sound-menu")
+        try:
+            self.xmms.connect(os.getenv("XMMS_PATH"), self.dieme)
+        except IOError, detail:
+            print "Connection failed:", detail
+            sys.exit(1)
 
-		self.conn = xmmsclient.glib.GLibConnector(self.xmms)
-		self.confdir = xmmsclient.userconfdir_get()
-		self.dbus = DBusGMainLoop(set_as_default=True)
-		"""self.xmms.playback_current_id(self.my_current_id)"""
-		self.xmms.broadcast_playback_status(self.update_playback_status)
-		self.xmms.broadcast_playback_current_id(self.update_nowplaying)
-		self.sound_menu = SoundMenuControls('xmms2')
-		self.sound_menu._sound_menu_next = self._sound_menu_next
-		self.sound_menu._sound_menu_previous = self._sound_menu_previous
-		self.sound_menu._sound_menu_is_playing = self._sound_menu_is_playing
-		self.sound_menu._sound_menu_play = self._sound_menu_play
-		self.sound_menu._sound_menu_pause = self._sound_menu_pause
-		self.sound_menu._sound_menu_raise = self._sound_menu_raise
+        self.conn = xmmsclient.glib.GLibConnector(self.xmms)
+        self.confdir = xmmsclient.userconfdir_get()
+        self.dbus = DBusGMainLoop(set_as_default=True)
+        """self.xmms.playback_current_id(self.my_current_id)"""
+        self.xmms.broadcast_playback_status(self.update_playback_status)
+        self.xmms.broadcast_playback_current_id(self.update_nowplaying)
+        self.sound_menu = SoundMenuControls('xmms2')
+        self.sound_menu._sound_menu_next = self._sound_menu_next
+        self.sound_menu._sound_menu_previous = self._sound_menu_previous
+        self.sound_menu._sound_menu_is_playing = self._sound_menu_is_playing
+        self.sound_menu._sound_menu_play = self._sound_menu_play
+        self.sound_menu._sound_menu_pause = self._sound_menu_pause
+        self.sound_menu._sound_menu_raise = self._sound_menu_raise
 
-		self.playback_status = False
-		timeout_add_seconds(1, self.firstupdate)
-		self.ml.run()
-		
-	def firstupdate(self):
-		self.xmms.playback_status(self.update_playback_status)
-		self.xmms.playback_current_id(self.update_nowplaying)
+        self.playback_status = False
+        timeout_add_seconds(1, self.firstupdate)
+        self.ml.run()
 
-	def dieme(self, etc):
-		self.ml.quit()
+    def firstupdate(self):
+        self.xmms.playback_status(self.update_playback_status)
+        self.xmms.playback_current_id(self.update_nowplaying)
 
-	def _sound_menu_is_playing(self):
-		"""return True if the player is currently playing, otherwise, False"""
-		return self.playback_status
+    def dieme(self, etc):
+        self.ml.quit()
 
-	def _sound_menu_play(self):
-		"""start playing if ready"""
-		self.xmms.playback_start()
+    def _sound_menu_is_playing(self):
+        """return True if the player is currently playing, otherwise, False"""
+        return self.playback_status
 
-	def _sound_menu_pause(self):
-		"""pause if playing"""
-		self.xmms.playback_pause()
+    def _sound_menu_play(self):
+        """start playing if ready"""
+        self.xmms.playback_start()
 
-	def _sound_menu_next(self):
-		"""go to the next song in the list"""
-		self.xmms.playlist_set_next_rel(1)
-		self.xmms.playback_tickle()
+    def _sound_menu_pause(self):
+        """pause if playing"""
+        self.xmms.playback_pause()
 
-	def _sound_menu_previous(self):
-		"""go to the previous song in the list"""
-		self.xmms.playlist_set_next_rel(-1)
-		self.xmms.playback_tickle()
+    def _sound_menu_next(self):
+        """go to the next song in the list"""
+        self.xmms.playlist_set_next_rel(1)
+        self.xmms.playback_tickle()
+
+    def _sound_menu_previous(self):
+        """go to the previous song in the list"""
+        self.xmms.playlist_set_next_rel(-1)
+        self.xmms.playback_tickle()
 
 
-	def _sound_menu_raise(self):
-		"""raise the window to the top of the z-order"""
-		self.xmms.playback_status(self.update_playback_status)
-		self.xmms.playback_current_id(self.update_nowplaying)
-		
-	def update_playback_status(self, result):
-		if result.value() == xmmsclient.PLAYBACK_STATUS_PLAY:
-			self.playback_status = True
-			self.sound_menu.signal_playing()
-		else:
-			self.playback_status = False
-			self.sound_menu.signal_paused()
-			
-	def update_nowplaying(self, result):
-		v = result.value()
-        
-		if isinstance(v, numbers.Number):
-			# this is the ID. I want the whole info.
-			self.xmms.medialib_get_info(result.value(),self.update_nowplaying)
-		else:
-			if isinstance(v, basestring): # coverart
-				info = ""
+    def _sound_menu_raise(self):
+        """raise the window to the top of the z-order"""
+        self.xmms.playback_status(self.update_playback_status)
+        self.xmms.playback_current_id(self.update_nowplaying)
+
+    def update_playback_status(self, result):
+        if result.value() == xmmsclient.PLAYBACK_STATUS_PLAY:
+            self.playback_status = True
+            self.sound_menu.signal_playing()
+        else:
+            self.playback_status = False
+            self.sound_menu.signal_paused()
+
+    def update_nowplaying(self, result):
+        v = result.value()
+
+        if isinstance(v, numbers.Number):
+            # this is the ID. I want the whole info.
+            self.xmms.medialib_get_info(result.value(),self.update_nowplaying)
+        else:
+            if isinstance(v, basestring): # coverart
+                info = ""
                 #coverimg = StringIO(v)
-			elif v is None: # what?
-				return
-			else:
-				info = v
+            elif v is None: # what?
+                return
+            else:
+                info = v
 
-			if not info: return #for "not playing"
+            if not info: return #for "not playing"
 
-			cover = None
-			album = None
-			
-			if 'album' in info:
-				album = info['album'].replace('&', '&amp;').replace('<', '&lt;')
-			
-			if 'picture_front' in info:
-				cover = "file://" + self.confdir + "/bindata/" + info['picture_front']
-			
-			if 'artist' in info and 'title' in info:
-				info['artist'] = info['artist'].replace('&', '&amp;').replace('<', '&lt;')
-				info['title'] = info['title'].replace('&', '&amp;').replace('<', '&lt;')
-				self.sound_menu.song_changed(title = info['title'], artists = info['artist'], cover = cover, album = album)
-			elif 'title' in info: #ex. curl
-				info['title'] = info['title'].replace('&', '&amp').replace('<', '&lt;')
-				self.sound_menu.song_changed(title = info['title'], cover = cover, album = album)
-			else:
-				info['url'] = info['url'].split('/')[-1].replace('+', ' ')
-				self.sound_menu.song_changed(title = info['url'], cover = cover, album = album)
+            cover = None
+            album = None
 
-			self.sound_menu.signal_playing()
-			
-			
-			
+            if 'album' in info:
+                album = info['album'].replace('&', '&amp;').replace('<', '&lt;')
+
+            if 'picture_front' in info:
+                cover = "file://" + self.confdir + "/bindata/" + info['picture_front']
+
+            if 'artist' in info and 'title' in info:
+                info['artist'] = info['artist'].replace('&', '&amp;').replace('<', '&lt;')
+                info['title'] = info['title'].replace('&', '&amp;').replace('<', '&lt;')
+                self.sound_menu.song_changed(title = info['title'], artists = info['artist'], cover = cover, album = album)
+            elif 'title' in info: #ex. curl
+                info['title'] = info['title'].replace('&', '&amp').replace('<', '&lt;')
+                self.sound_menu.song_changed(title = info['title'], cover = cover, album = album)
+            else:
+                info['url'] = info['url'].split('/')[-1].replace('+', ' ')
+                self.sound_menu.song_changed(title = info['url'], cover = cover, album = album)
+
+            self.sound_menu.signal_playing()
+
+
+
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 ### BEGIN LICENSE
 # Copyright (C) 2011 Rick Spencer <rick.spencer@canonical.com>
-# This program is free software: you can redistribute it and/or modify it 
-# under the terms of the GNU General Public License version 3, as published 
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 3, as published
 # by the Free Software Foundation.
-# 
-# This program is distributed in the hope that it will be useful, but 
-# WITHOUT ANY WARRANTY; without even the implied warranties of 
-# MERCHANTABILITY, SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR 
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranties of
+# MERCHANTABILITY, SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR
 # PURPOSE.  See the GNU General Public License for more details.
-# 
-# You should have received a copy of the GNU General Public License along 
+#
+# You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 ### END LICENSE
 
@@ -196,7 +196,7 @@ Functions and properties starting with capitalize letters, such as
 functions and properties are not designed to be called directly
 or overriden by application code, only the Sound Menu.
 
-Other functions are designed to be called as needed by the 
+Other functions are designed to be called as needed by the
 implementation to inform the Sound Menu of changes. Thse functions
 include signal_playing, signal_paused, and song_changed.
 
@@ -219,11 +219,11 @@ sound_menu.signal_playing()
 sound_menu.signal_paused()
 
 #whent the song is changed from the application,
-#use song_changed to inform the Ubuntu Sound Menu 
+#use song_changed to inform the Ubuntu Sound Menu
 sound_menu.song_changed(artist, album, song_title)
 
 Configuring
-SoundMenuControls does not come with any stock behaviors, so it 
+SoundMenuControls does not come with any stock behaviors, so it
 cannot be configured
 
 Extending
@@ -263,7 +263,7 @@ class SoundMenuControls(dbus.service.Object):
         bus_str = """org.mpris.MediaPlayer2.%s""" % desktop_name
         bus_name = dbus.service.BusName(bus_str, bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, "/org/mpris/MediaPlayer2")
-        self.__playback_status = "Stopped"    
+        self.__playback_status = "Stopped"
 
         self.song_changed()
 
@@ -273,14 +273,14 @@ class SoundMenuControls(dbus.service.Object):
         This method is not typically overriden. It should be called
         by implementations of this class when the player has changed
         songs.
-            
+
         named arguments:
             artists - a list of strings representing the artists"
             album - a string for the name of the album
             title - a string for the title of the song
 
         """
-        
+
         if artists is None:
             artists = [""]
         if album is None:
@@ -289,7 +289,7 @@ class SoundMenuControls(dbus.service.Object):
             title = ""
         if cover is None:
             cover = ""
-   
+
         self.__meta_data = dbus.Dictionary({"xesam:album":album,
                             "xesam:title":title,
                             "xesam:artist":artists,
@@ -415,7 +415,7 @@ class SoundMenuControls(dbus.service.Object):
 
         self._sound_menu_next()
 
-    def _sound_menu_next(self): 
+    def _sound_menu_next(self):
         """_sound_menu_next
 
         This function is called when the user has clicked
@@ -506,13 +506,13 @@ class SoundMenuControls(dbus.service.Object):
         d = dbus.Dictionary({"PlaybackStatus":self.__playback_status},
                                     "sv",variant_level=1)
         self.PropertiesChanged("org.mpris.MediaPlayer2.Player",d,[])
-            
+
 
     def _sound_menu_is_playing(self):
-        """_sound_menu_is_playing         
+        """_sound_menu_is_playing
 
-        Check if the the player is playing,.        
-        Implementations should overrirde this function 
+        Check if the the player is playing,.
+        Implementations should overrirde this function
         so that the Sound Menu can check whether to display
         Play or Pause functionality.
 
@@ -532,10 +532,10 @@ class SoundMenuControls(dbus.service.Object):
     def _sound_menu_pause(self):
         """_sound_menu_pause
 
-        Reponds to the Sound Menu when the user has click the 
+        Reponds to the Sound Menu when the user has click the
         Pause button.
-        
-        Implementations should overrirde this function 
+
+        Implementations should overrirde this function
         to pause playback when called.
 
         The default implementation of this function does nothing
@@ -545,7 +545,7 @@ class SoundMenuControls(dbus.service.Object):
 
         returns:
             None
- 
+
        """
 
         pass
@@ -553,10 +553,10 @@ class SoundMenuControls(dbus.service.Object):
     def _sound_menu_play(self):
         """_sound_menu_play
 
-        Reponds to the Sound Menu when the user has click the 
+        Reponds to the Sound Menu when the user has click the
         Play button.
-        
-        Implementations should overrirde this function 
+
+        Implementations should overrirde this function
         to play playback when called.
 
         The default implementation of this function does nothing
@@ -566,7 +566,7 @@ class SoundMenuControls(dbus.service.Object):
 
         returns:
             None
- 
+
        """
 
         pass
